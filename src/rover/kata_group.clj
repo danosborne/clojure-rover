@@ -81,4 +81,4 @@
 
 ;; This runs all tests in all namespace mathcing regex
 ;; Would typically develop with this and remove when done.
-(run-all-tests #"rover\\.group")
+(run-all-tests #"rover\\.kata_group.*")
