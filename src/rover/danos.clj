@@ -1,5 +1,4 @@
-(ns rover.danos
-  (:require [clojure.test :refer :all]))
+(ns rover.danos)
 
 ;; We are given Rover's starting coords x,y and facing direction N,S,W,E
 ;; Rover is given a sequence of characters representing instructions
@@ -35,6 +34,8 @@
 ;; "ffrfflfffrbb"
 ;;
 
+(defrecord Rover [coords facing])
+
 (def movements
   {:north 
    {:forward -
@@ -66,30 +67,10 @@
   [rover]
   ((make-move :forward) rover))
 
-(deftest move-forward
-  (are [facing in out] 
-    (= 
-     {:coords out :facing facing}
-     (move-f {:coords in :facing facing}))
-    :north [2 2] [2 1]
-    :south [2 2] [2 3]
-    :east [2 2] [3 2]
-    :west [2 2] [1 2]))
-
 (defn move-b 
   "Takes a rover, gives a new rover"
   [rover]
   ((make-move :backward) rover))
-
-(deftest move-backward
-  (are [facing in out] 
-    (= 
-     {:coords out :facing facing}
-     (move-b {:coords in :facing facing}))
-    :north [2 2] [2 3]
-    :south [2 2] [2 1]
-    :east [2 2] [1 2]
-    :west [2 2] [3 2]))
 
 (defonce facings [:north :east :south :west])
 
@@ -99,33 +80,14 @@
 (defn rotate-l [facing]
   (rotates facing -))
 
-(defn rotate-r [facing] 
+(defn rotate-r [facing]
   (rotates facing +))
-
-(deftest rotates-left
-  (are [in out] (= out (rotate-l in))
-       :west :south
-       :south :east
-       :east :north
-       :north :west))
-
-(deftest rotates-right 
-  (are [in out] (= out (rotate-r in))
-       :west :north
-       :north :east
-       :east :south
-       :south :west))
 
 (defn rotate 
   "Returns a freshly rotated rover"
   [{facing :facing :as rover} rotator]
   (assoc rover :facing (rotator facing)))
 
-(deftest rotates-rover-left
-  (is (= :west (:facing (rotate {:facing :north } rotate-l)))))
-
-(deftest rotates-rover-right
-  (is (= :east (:facing (rotate {:facing :north } rotate-r)))))
 
 ;; -- Command dispatch...
 ;;
@@ -142,42 +104,6 @@
   [rover grid commands]
   (reduce #(conj %1 (execute %2 (last %1) grid)) [rover] commands))
 
-(deftest goes-right 
-  (let [results (go {:coords [1 2] :facing :north} {:dimensions [4 4]} "rr")]
-    (is (= :north (:facing (first results))))
-    (is (= :east (:facing (second results))))
-    (is (= :south (:facing (last results))))))
-(deftest goes-left
-  (let [results (go {:coords [1 2] :facing :north} {:dimensions [4 4]} "ll")]
-    (is (= :north (:facing (first results))))
-    (is (= :west (:facing (second results))))
-    (is (= :south (:facing (last results))))))
-(deftest goes-forward
-  (let [results1 (go {:coords [1 2] :facing :east} {:dimensions [4 4]} "ff")
-        results2 (go {:coords [3 2] :facing :east} {:dimensions [4 4]} "bb")
-        results3 (go {:coords [2 3] :facing :north} {:dimensions [4 4]} "ff")
-        results4 (go {:coords [2 1] :facing :north} {:dimensions [4 4]} "bb")]
-
-    (is (= 1 (-> results1 first :coords first)))
-
-    (is (= :east (-> results1 second :facing)))
-    (is (= 2 (-> results1 second :coords first)))
-    (is (= 2 (-> results1 second :coords second)))
-    (is (= 3 (-> results1 (nth 2) :coords first)))
-
-    (is (= 2 (-> results2 second :coords first)))
-    (is (= 2 (-> results2 second :coords second)))
-    (is (= 1 (-> results2 (nth 2) :coords first)))
-    
-    (is (= :north (-> results3 second :facing)))
-    (is (= 2 (-> results3 second :coords second)))
-    (is (= 2 (-> results3 second :coords first)))
-    (is (= 1 (-> results3 (nth 2) :coords second)))
-    
-    (is (= :north (-> results4 second :facing)))
-    (is (= 2 (-> results4 second :coords second)))
-    (is (= 2 (-> results4 second :coords first)))
-    (is (= 3 (-> results4 (nth 2) :coords second)))))
 
 ;; -- Helpful for building and viewing our data structures at the repl...
 ;;
@@ -207,7 +133,7 @@
 (comment 
   ;; rotation
   (let [grid {:dimensions [4 4] :obstacles []}
-        rover {:coords [1 2] :facing :north}
+        rover (map->Rover {:coords [1 2] :facing :north})
         commands "lr"
         rover-states (go rover grid commands)]
     (clojure.pprint/pprint rover-states)
@@ -233,6 +159,4 @@
     (doseq [rover-state rover-states]
       (render rover-state grid)))
 )
-
-(run-all-tests #"rover\\.danos.*")
 
